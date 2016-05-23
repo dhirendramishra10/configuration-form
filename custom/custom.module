@@ -1,0 +1,86 @@
+<?php
+
+
+/**
+ * This file alters the site information page and
+ * provides a URL that responds with 
+ * a JSON representation of a given node with the content type page
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter
+ */
+function custom_form_system_site_information_settings_alter(&$form, &$form_state, $form_id) {
+  
+  $form['site_information']['site_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Site API Key'),
+    '#default_value' => variable_get('siteapikey', "No API Key yet"),
+    '#size' => 40,    
+    '#weight' => 0,
+  );
+  
+  $default_value = variable_get('siteapikey');
+  if (!empty($default_value)) {
+    // once value is saved in database , change the text for submit button
+    $form['actions']['submit']['#value'] = t('Update Configuration');
+  }
+  // Defines custom submit handler for altered form
+  $form['#submit'][] = 'system_site_info_setting_submit';
+  
+}
+
+/**
+ * Extra Submit Handler for system_site_information_settings
+ */
+function system_site_info_setting_submit($form, &$form_state) {
+  if (!empty($form_state['values']['site_api_key'])) {
+    $value = $form_state['values']['site_api_key'];
+    // sets entered data in variable table
+    variable_set('siteapikey', $value);
+    drupal_set_message('Site API Key has been saved with value  ' . $value);
+  }
+}
+
+/**
+ * Implements hook_menu
+ */
+function custom_menu() {
+  $items = array();
+  $items['view-node-details/%'] = array(
+    'title' => t('Content data'),
+  //  'description' => t('details for node passed in argument'),
+    'page callback' => 'get_json_detail_for_node',
+    'page argument' => array(1),
+    'access callback' => 'check_access_node_details',
+  );
+  return $items;
+}
+
+/**
+ * Check permission to view the provided link
+ */
+function check_access_node_details() {
+
+  $arg = arg(1);
+  $node_obj = node_load($arg);
+  $variable_value = variable_get('siteapikey');
+  
+  // previously submitted API Key and a node id (nid) of an appropriate node are present
+  if (!empty($variable_value) && !empty($node_obj)) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Return node details in json format
+ */
+function get_json_detail_for_node() {
+  $arg = arg(1);
+  $node_obj = node_load($arg);
+  $output = (array)$node_obj;
+  return drupal_json_output($output);
+}

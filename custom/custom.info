@@ -1,0 +1,5 @@
+name = Custom
+description = A Custom module altering the drupal admin pages.
+package = Drupal 7 Development
+core = 7.x
+files[] = custom.module
